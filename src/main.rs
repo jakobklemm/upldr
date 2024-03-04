@@ -1,12 +1,14 @@
-use anyhow::{Result, anyhow};
-use rusqlite::Row;
+use anyhow::{anyhow, Result};
 use rusqlite::Connection;
+use rusqlite::Row;
+
+// baselien commit.
 
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 struct Torrent {
     id: u64,
     hash: String,
-    name: String, 
+    name: String,
     size: u64,
     seeders: u64,
     leechers: u64,
@@ -20,14 +22,14 @@ struct Torrent {
 #[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 struct File {
     name: String,
-    size: usize
+    size: usize,
 }
 
 impl File {
     fn from_row(row: &Row) -> Result<Self> {
         Ok(Self {
             name: row.get(1)?,
-            size: row.get(2)?
+            size: row.get(2)?,
         })
     }
 }
@@ -39,7 +41,7 @@ impl Torrent {
         let mut t = Self {
             id: row.get(0)?,
             hash: row.get(1)?,
-            name:  row.get(2)?,
+            name: row.get(2)?,
             size: row.get(3)?,
             uploaded: row.get(4)?,
             seeders: row.get(5)?,
@@ -54,7 +56,6 @@ impl Torrent {
         t.url = url;
 
         Ok(t)
-
     }
 
     fn files(&mut self, conn: &Connection) -> Result<()> {
@@ -75,7 +76,7 @@ impl Torrent {
         }
 
         Ok(())
-    } 
+    }
 }
 
 #[tokio::main]
@@ -99,8 +100,11 @@ async fn main() -> Result<()> {
     for torr in iters {
         if let Ok(torrent) = torr {
             println!("Processing: {}", torrent.id);
-            let _ = client.post("https://meili.local.jeykey.net/indexes/torrents/documents").json(&torrent).send().await?;
-            
+            let _ = client
+                .post("https://meili.local.jeykey.net/indexes/torrents/documents")
+                .json(&torrent)
+                .send()
+                .await?;
         }
     }
 
